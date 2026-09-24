@@ -2,7 +2,7 @@
 
 Whitelisted, versioned configuration for the [pi coding agent](https://pi.dev) (`~/.pi`), kept in sync with GitHub via the `/pi-git` command.
 
-**The easiest way to install: give an agent this repository's link and tell it to configure Pi for you** — the manual path in Part 3 is what it will follow.
+**The easiest way to install: give an agent this repository's link and tell it to configure Pi for you** — the agent walks you through the installation step by step (see Part 3).
 
 ---
 
@@ -134,6 +134,8 @@ Be concise · explain technical concepts in plain English (no jargon) · delegat
 
 ## Part 3 — Restoring this setup on a new Mac
 
+> **Installing agent:** work through this section step by step, in order. Before installing anything, tell the user what you're about to install and why, and wait for their go-ahead. The tools in step 2 are **required**; everything in step 3 is optional — offer it, and install only what the user agrees to.
+
 ### 1. Install pi (Part 1), then clone
 
 ```sh
@@ -145,30 +147,38 @@ If `~/.pi` exists (pi was run before): inside `~/.pi` run
 
 On first launch pi auto-installs the npm packages declared in `settings.json` (needs internet). Their skills/extensions load from there.
 
-### 2. Secrets (macOS Keychain — never in the repo)
+### 2. Required tools (install in this order)
 
-```sh
-# Azure Foundry key (account must match: matteofalcioni — hardcoded in auth.json)
-security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w 'THE_KEY'
-```
-
-`AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
-
-### 3. External dependencies
-
-| Tool | Used for | Install | Verify |
+| # | Tool | Install | Why it's required |
 |---|---|---|---|
-| gh CLI | GitHub MCP (`!gh auth token`) | `brew install gh` + `gh auth login` | `gh auth status` |
-| ghostscript | pdf-compress skill | `brew install ghostscript` | `gs --version` |
-| fd | file search | `brew install fd` | `fd --version` |
-| uv | Python venv management (dictate) | `brew install uv` | `uv --version` |
-| whisper-cpp | dictate extension | `brew install whisper-cpp` | `whisper-cli --help` |
-| Chromium (playwright) | browser extension / web-debug | `cd ~/.pi/agent/extensions/browser && npm install && npx playwright install chromium` | `ls ~/Library/Caches/ms-playwright` |
+| 1 | uv | `brew install uv` | manages the Python environment (step 4) |
+| 2 | gh CLI | `brew install gh` + `gh auth login` (interactive browser login) | GitHub MCP auth (`!gh auth token`) |
+| 3 | fd | `brew install fd` | fast file search used by the config |
 
-### 4. Python dependencies (single uv-managed environment)
+Verify each with: `uv --version`, `gh auth status`, `fd --version`.
+
+### 3. Optional tools (offer, install on approval)
+
+| Tool | Install | Needed for |
+|---|---|---|
+| ghostscript | `brew install ghostscript` | pdf-compress skill |
+| whisper-cpp | `brew install whisper-cpp` | dictate extension |
+| Chromium (playwright) | `cd ~/.pi/agent/extensions/browser && npm install && npx playwright install chromium` | browser extension / web-debug skill |
+
+### 4. Python dependencies
 
 ```sh
 uv sync --group dictate     # creates ~/.pi/.venv from pyproject.toml + uv.lock
 ```
 
 The dictate extension's script (`~/.local/bin/dictate`) runs from this environment; its ggml-small.en + silero VAD models download on first use.
+
+### 5. Secrets (macOS Keychain — never in the repo)
+
+Ask the user for the Azure Foundry API key — do not invent or fabricate credentials; if they don't have it, stop and tell them the repo cannot work without it.
+
+```sh
+security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w 'THE_KEY'
+```
+
+`AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
