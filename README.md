@@ -55,14 +55,13 @@ Manage the whitelist with `/pi-git --config` (TUI: toggle entries with Enter, Es
 │   ├── web-search.json          # web_search provider settings (auto-summary workflow)
 │   ├── APPEND_SYSTEM.md         # global behavior rules appended to every session
 │   ├── agents/                  # custom subagents (4)
-│   ├── skills/                  # local skills (3 tracked + kimai, local-only)
-│   ├── extensions/              # extensions (8 tracked)
-│   └── third-party-skills-lock.json  # registry of externally installed skills (untracked)
+│   ├── skills/                  # local skills (3)
+│   └── extensions/              # extensions (8 tracked)
 ├── pi-git.json                  # THE whitelist (managed via /pi-git --config)
 └── README.md
 ```
 
-Always excluded (see `.gitignore`): `sessions/` (chat history), `npm/` (auto-installed packages), caches, the browser extension's Chromium profile, the `tars.wav` voice sample (biometric), binaries.
+Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-installed packages), caches, the browser extension's Chromium profile, binaries.
 
 ### Models & provider
 
@@ -87,8 +86,6 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `tts` | Local text-to-speech on Apple Silicon (mlx-audio), zero-shot voice cloning, TARS persona |
 | `web-debug` | Drives a live page (DOM, storage, network, console) with browser tools to debug frontend issues |
 
-`kimai-time-tracking` (Kimai time logging via `kimai.sh`) exists locally but is **not** whitelisted — as is the `prompts/` dir (the `/tts` command). Whitelist them with `/pi-git --config` if wanted.
-
 ### Agents (tracked)
 
 | Agent | What it does |
@@ -111,8 +108,6 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `tts-commands.ts` | `/speak` — direct TTS command, no LLM round trip |
 | `pi-git/` | `/pi-git` — the whitelist TUI and sync command this repo runs on |
 
-`kimai-tracker` (`/kimai`) exists locally but is not whitelisted. `jev-browser-use.ts` is explicitly disabled in `settings.json`.
-
 ### Installed packages (auto-installed by pi from `settings.json` "packages")
 
 - `npm:pi-web-access` — web access for pi
@@ -123,7 +118,7 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 - `npm:@narumitw/pi-plan-mode` — plan-mode workflow
 - `npm:@tintinweb/pi-subagents` — subagent orchestration
 
-Disabled via `settings.json`: the ~27 databricks skills, `langchain-docs`, `confluence` skill/extension, `jev-browser-use.ts`.
+Disabled via `settings.json`: the ~27 databricks skills, `langchain-docs`, the `confluence` skill/extension.
 
 ### MCP servers (`mcp.json`)
 
@@ -153,8 +148,6 @@ On first launch pi auto-installs the npm packages declared in `settings.json` (n
 ```sh
 # Azure Foundry key (account must match: matteofalcioni — hardcoded in auth.json)
 security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w 'THE_KEY'
-# Kimai API token (for the local-only kimai skill)
-security add-generic-password -a "$USER" -s pi-kimai-key -w 'THE_TOKEN'
 ```
 
 `AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
@@ -164,7 +157,6 @@ security add-generic-password -a "$USER" -s pi-kimai-key -w 'THE_TOKEN'
 | Tool | Used for | Install | Verify |
 |---|---|---|---|
 | gh CLI | GitHub MCP (`!gh auth token`) | `brew install gh` + `gh auth login` | `gh auth status` |
-| cloudflared | Kimai (Cloudflare Access SSO) | `brew install cloudflared` + `cloudflared access login https://time-reporting.axpo.com` | `cloudflared access token <url>` |
 | ghostscript | pdf-compress skill | `brew install ghostscript` | `gs --version` |
 | fd | file search | `brew install fd` | `fd --version` |
 | uv | Python venv management (tts, dictate) | `brew install uv` | `uv --version` |
@@ -185,15 +177,9 @@ uv pip install --python ~/.local/venvs/dictate/bin/python sounddevice onnxruntim
 # ggml-small.en + silero VAD models download on first use
 ```
 
-### 5. External skills
-
-`microsoft-foundry` (and databricks skills, disabled) live in `~/.agents/skills`; the registry snapshot is `third-party-skills-lock.json` (untracked).
-
 ## Daily use
-
 - **`/pi-git --config`** — whitelist TUI; **`/pi-git --update`** — commit + push `main`.
 - **`/reload`** — reload skills, extensions, prompts, themes after editing config.
 - **`/ask`**, **`/clip`**, **`/dictate`**, **`/speak`** — user picker, clipboard, dictation, TTS (commands from tracked extensions).
-- **`/kimai`**, **`/tts`** — local-only (not whitelisted): Kimai time tracking, TTS command.
 
 No manual git: `/pi-git --update` stages the whitelist, untracks what left it, commits (`sync pi config (N files)`) and pushes.
