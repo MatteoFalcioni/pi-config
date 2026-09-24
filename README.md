@@ -168,10 +168,3 @@ security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w
 uv pip install --python ~/.local/venvs/dictate/bin/python sounddevice onnxruntime numpy
 # ggml-small.en + silero VAD models download on first use
 ```
-
-## Daily use
-- **`/pi-git --config`** — whitelist TUI; **`/pi-git --update`** — commit + push `main`.
-- **`/reload`** — reload skills, extensions, prompts, themes after editing config.
-- **`/ask`**, **`/clip`**, **`/dictate`** — user picker, clipboard, dictation (commands from tracked extensions).
-
-No manual git: `/pi-git --update` stages the whitelist, untracks what left it, commits (`sync pi config (N files)`) and pushes.
