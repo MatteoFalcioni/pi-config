@@ -13,9 +13,10 @@ Configurazione personale del **pi coding agent** (`~/.pi`), versionata su GitHub
 │   ├── mcp.json               # server MCP (GitHub Copilot, auth via `!gh auth token`)
 │   ├── agents/                # sottogenti personalizzate
 │   ├── skills/                # skill locali: pdf-compress, tts, web-debug, kimai-time-tracking
-│   ├── prompts/               # comandi `/`: tts, pi-update-git
-│   ├── extensions/            # estensioni: browser, kimai-tracker, tts-commands, ...
+│   ├── prompts/               # comandi `/`: tts
+│   ├── extensions/            # estensioni: browser, kimai-tracker, pi-git, tts-commands, ...
 │   └── third-party-skills-lock.json   # registro skill esterne installate (~/.agents)
+├── pi-git.json             # whitelist: cosa finisce su GitHub (vedi /pi-git)
 ├── .gitignore
 └── README.md
 ```
@@ -88,9 +89,10 @@ uv pip install --python ~/.local/venvs/dictate/bin/python sounddevice onnxruntim
 
 ## Uso quotidiano
 
-- **`/pi-update-git`** — committa e pushta su `main` le modifiche a `~/.pi`.
+- **`/pi-git --config`** — TUI whitelist: scegli skill/agenti/prompt/estensioni/file da tracciare (scritti in `pi-git.json`).
+- **`/pi-git --update`** — committa e pushta su `main` solo la whitelist (+ `README.md` e il tool stesso).
 - **`/reload`** — ricarica skill, estensioni, prompt, temi (dopo modifiche a `prompts/`, `skills/`, ...).
 - **`/tts`** — sintesi vocale locale (TTS, persona TARS con `--tars`).
 - **`/kimai`** (estensione) — time tracking Kimai.
 
-Git sul config funziona come ovunque: `cd ~/.pi && git add -A && git commit -m "..." && git push`.
+Il versionamento avviene tramite `/pi-git` — niente git a mano: il tool aggiunge la whitelist, rimuove ciò che non è più whitelistato, committa e pushta.
