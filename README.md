@@ -175,10 +175,10 @@ The dictate extension's script (`~/.local/bin/dictate`) runs from this environme
 
 ### 5. Secrets (macOS Keychain — never in the repo)
 
-Ask the user for the Azure Foundry API key — do not invent or fabricate credentials; if they don't have it, stop and tell them the repo cannot work without it.
+Tell the user to store the Azure Foundry API key **themselves**, in their own terminal — do not ask for the key and do not have it pasted into the session (you should never see it):
 
 ```sh
 security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w 'THE_KEY'
 ```
 
-`AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
+Wait for the user to confirm it's done, then continue. `AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
