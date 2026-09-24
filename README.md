@@ -129,7 +129,7 @@ Disabled via `settings.json`: the ~27 databricks skills, `langchain-docs`, the `
 
 ### Global behavior (`APPEND_SYSTEM.md`)
 
-Be concise · explain technical concepts in plain English (no jargon) · delegate to subagents when it helps · the user is Matteo.
+Be concise · explain technical concepts in plain English (no jargon) · delegate to subagents when it helps
 
 ---
 
