@@ -77,8 +77,9 @@ Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-install
 | Kimi-K2.6 | 200K | |
 | Kimi-K2.7-Code | 200K | |
 | Grok-4.6 | 1M | reasoning; supports reasoning effort (low→xhigh) |
+| GPT-6 Sol | 1M | reasoning; thinking: off/high/max — default thinking: max |
 
-Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-Flash-0731`, thinking level `max`. Enabled models also include `azure-openai-responses/gpt-5-nano` and `gpt-5.6-terra`. API keys never appear in files: `auth.json` and `models.json` reference the Keychain via `!security find-generic-password …`, and the GitHub MCP token via `!gh auth token`.
+Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-Flash-0731`, thinking level `max`. Enabled models also include `azure-openai-responses/gpt-5-nano`, `gpt-5.6-terra`, and `azure-foundry-chat/gpt-6-sol` (thinking pinned to `max`). API keys never appear in files: `auth.json` and `models.json` reference the Keychain via `!security find-generic-password …`, and the GitHub MCP token via `!gh auth token`.
 
 > ⚠️ **This provider requires real Azure Foundry credentials**: the API key is read from the macOS Keychain (`pi-az-foundry-key`) or, outside macOS, from the `AZURE_OPENAI_API_KEY` environment variable (see Part 3). Do not invent or fabricate them — if the credentials are missing, stop and ask the owner for the key.
 
@@ -108,7 +109,7 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `inspect-image.ts` | `inspect_image` — routes images to a vision model for non-vision models |
 | `browser/` | Playwright-driven headless Chromium (`browser_*` tools) for live-page debugging |
 | `pi-permission-system/` | Permission gating (config: yoloMode on, permission review log) |
-| `pi-git/` | `/pi-git` — the whitelist TUI and sync command this repo runs on |
+| `pi-git/` | `/pi-git` — whitelist TUI, sync and README regeneration (`--config`, `--update`, `--readme`) |
 
 ### Installed packages (auto-installed by pi from `settings.json` "packages")
 
