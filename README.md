@@ -45,7 +45,7 @@ Everything under `~/.pi` is **live configuration**: it stays on disk and git nev
 
 Manage the whitelist with `/pi-git --config` (TUI: toggle entries with Enter, Esc goes back, "Save and exit" writes the manifest) and sync with `/pi-git --update` (stages exactly the whitelist, untracks anything no longer whitelisted, commits and pushes; no-op if nothing changed). The update logic is self-tested: `PI_GIT_REPO=/tmp/scratch node agent/extensions/pi-git/test.ts` against a seeded scratch repo.
 
-### Structure
+### Structure (tracked files only)
 
 ```
 ~/.pi/
@@ -58,7 +58,7 @@ Manage the whitelist with `/pi-git --config` (TUI: toggle entries with Enter, Es
 │   ├── APPEND_SYSTEM.md         # global behavior rules appended to every session
 │   ├── agents/                  # custom subagents (4)
 │   ├── skills/                  # local skills (2)
-│   └── extensions/              # extensions (7 tracked)
+│   └── extensions/              # extensions (7)
 ├── pi-git.json                  # THE whitelist (managed via /pi-git --config)
 └── README.md
 ```
@@ -82,14 +82,14 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 
 > ⚠️ **This provider requires real Azure Foundry credentials**: the API key stored in the macOS Keychain as `opencode-azure-foundry-key` (see Part 3). Do not invent or fabricate them — if the credentials are missing, stop and ask the owner for the key.
 
-### Skills (tracked)
+### Skills (2)
 
 | Skill | What it does |
 |---|---|
 | `pdf-compress` | Compresses PDFs locally with Ghostscript (quality presets, target size), no upload |
 | `web-debug` | Drives a live page (DOM, storage, network, console) with browser tools to debug frontend issues |
 
-### Agents (tracked)
+### Agents (4)
 
 | Agent | What it does |
 |---|---|
@@ -98,7 +98,7 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `deep-researcher` | GenAI research and fact-checking analyst with confidence-tagged reports |
 | `worker` | General-purpose worker that reads, writes, and edits code |
 
-### Extensions (tracked)
+### Extensions (7) and their commands/tools
 
 | Extension | What it does |
 |---|---|
