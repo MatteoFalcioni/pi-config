@@ -2,6 +2,8 @@
 
 Whitelisted, versioned configuration for the [pi coding agent](https://pi.dev) (`~/.pi`), kept in sync with GitHub via the `/pi-git` command.
 
+**The easiest way to install: give an agent this repository's link and tell it to configure Pi for you** — the manual path in Part 3 is what it will follow.
+
 ---
 
 ## Part 1 — Installing pi (from the official repo)
@@ -77,6 +79,8 @@ Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-install
 | Grok-4.6 | 1M | reasoning; supports reasoning effort (low→xhigh) |
 
 Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-Flash-0731`, thinking level `max`. Enabled models also include `azure-openai-responses/gpt-5-nano` and `gpt-5.6-terra`. API keys never appear in files: `auth.json` and `models.json` reference the Keychain via `!security find-generic-password …`, and the GitHub MCP token via `!gh auth token`.
+
+> ⚠️ **This provider requires real Azure Foundry credentials**: the API key stored in the macOS Keychain as `opencode-azure-foundry-key` (see Part 3). Do not invent or fabricate them — if the credentials are missing, stop and ask the owner for the key.
 
 ### Skills (tracked)
 
