@@ -55,8 +55,8 @@ Manage the whitelist with `/pi-git --config` (TUI: toggle entries with Enter, Es
 │   ├── web-search.json          # web_search provider settings (auto-summary workflow)
 │   ├── APPEND_SYSTEM.md         # global behavior rules appended to every session
 │   ├── agents/                  # custom subagents (4)
-│   ├── skills/                  # local skills (3)
-│   └── extensions/              # extensions (8 tracked)
+│   ├── skills/                  # local skills (2)
+│   └── extensions/              # extensions (7 tracked)
 ├── pi-git.json                  # THE whitelist (managed via /pi-git --config)
 └── README.md
 ```
@@ -83,7 +83,6 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | Skill | What it does |
 |---|---|
 | `pdf-compress` | Compresses PDFs locally with Ghostscript (quality presets, target size), no upload |
-| `tts` | Local text-to-speech on Apple Silicon (mlx-audio), zero-shot voice cloning, TARS persona |
 | `web-debug` | Drives a live page (DOM, storage, network, console) with browser tools to debug frontend issues |
 
 ### Agents (tracked)
@@ -105,7 +104,6 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `inspect-image.ts` | `inspect_image` — routes images to a vision model for non-vision models |
 | `browser/` | Playwright-driven headless Chromium (`browser_*` tools) for live-page debugging |
 | `pi-permission-system/` | Permission gating (config: yoloMode on, permission review log) |
-| `tts-commands.ts` | `/speak` — direct TTS command, no LLM round trip |
 | `pi-git/` | `/pi-git` — the whitelist TUI and sync command this repo runs on |
 
 ### Installed packages (auto-installed by pi from `settings.json` "packages")
@@ -159,19 +157,13 @@ security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w
 | gh CLI | GitHub MCP (`!gh auth token`) | `brew install gh` + `gh auth login` | `gh auth status` |
 | ghostscript | pdf-compress skill | `brew install ghostscript` | `gs --version` |
 | fd | file search | `brew install fd` | `fd --version` |
-| uv | Python venv management (tts, dictate) | `brew install uv` | `uv --version` |
-| ffmpeg | audio (TTS) | `brew install ffmpeg` | `ffmpeg -version` |
+| uv | Python venv management (dictate) | `brew install uv` | `uv --version` |
 | whisper-cpp | dictate extension | `brew install whisper-cpp` | `whisper-cli --help` |
 | Chromium (playwright) | browser extension / web-debug | `cd ~/.pi/agent/extensions/browser && npm install && npx playwright install chromium` | `ls ~/Library/Caches/ms-playwright` |
 
 ### 4. Python venvs (Apple Silicon)
 
 ```sh
-# TTS (mlx-audio) — PIN mlx to 0.31.2: ≥0.32 fails JIT on M5/macOS 26.1
-uv venv ~/.local/venvs/tts --python 3.13
-uv pip install --python ~/.local/venvs/tts/bin/python mlx-audio "mlx==0.31.2" "mlx-metal==0.31.2"
-# Qwen3-TTS (0.6B/1.7B) weights download from HuggingFace on first use (~2.5+4.4 GB)
-
 # dictate (whisper)
 uv pip install --python ~/.local/venvs/dictate/bin/python sounddevice onnxruntime numpy
 # ggml-small.en + silero VAD models download on first use
@@ -180,6 +172,6 @@ uv pip install --python ~/.local/venvs/dictate/bin/python sounddevice onnxruntim
 ## Daily use
 - **`/pi-git --config`** — whitelist TUI; **`/pi-git --update`** — commit + push `main`.
 - **`/reload`** — reload skills, extensions, prompts, themes after editing config.
-- **`/ask`**, **`/clip`**, **`/dictate`**, **`/speak`** — user picker, clipboard, dictation, TTS (commands from tracked extensions).
+- **`/ask`**, **`/clip`**, **`/dictate`** — user picker, clipboard, dictation (commands from tracked extensions).
 
 No manual git: `/pi-git --update` stages the whitelist, untracks what left it, commits (`sync pi config (N files)`) and pushes.
