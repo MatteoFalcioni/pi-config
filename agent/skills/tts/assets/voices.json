@@ -1,0 +1,12 @@
+{
+  "voices": {
+    "tars": {
+      "description": "TARS — the robot from Interstellar (reference: 7 clips concatenated, 79.8s). Winning tone: temp 0.2, rep-penalty 1.5, English.",
+      "ref_audio": "voices/tars.wav",
+      "temperature": 0.2,
+      "repetition_penalty": 1.5,
+      "lang": "en",
+      "persona": "TARS"
+    }
+  }
+}

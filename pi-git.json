@@ -1,7 +1,32 @@
 {
-  "skills": [],
-  "agents": [],
+  "skills": [
+    "pdf-compress",
+    "tts",
+    "web-debug"
+  ],
+  "agents": [
+    "codebase-scout.md",
+    "deep-researcher.md",
+    "worker.md",
+    "Explore.md"
+  ],
   "prompts": [],
-  "extensions": [],
-  "files": []
+  "extensions": [
+    "ask.ts",
+    "inspect-image.json",
+    "dictate.ts",
+    "clip.ts",
+    "inspect-image.ts",
+    "pi-permission-system",
+    "tts-commands.ts",
+    "browser"
+  ],
+  "files": [
+    "APPEND_SYSTEM.md",
+    "auth.json",
+    "mcp.json",
+    "models.json",
+    "settings.json",
+    "web-search.json"
+  ]
 }

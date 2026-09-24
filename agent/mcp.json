@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "github": {
+      "url": "https://api.githubcopilot.com/mcp/",
+      "auth": false,
+      "protocolVersion": "auto",
+      "headers": {
+        "Authorization": "!gh auth token",
+        "X-MCP-Tools": "get_me,issue_read,issue_write,list_issues,search_issues,add_issue_comment,pull_request_read,list_pull_requests,search_pull_requests,create_pull_request,update_pull_request,merge_pull_request,get_file_contents,create_or_update_file,push_files,search_code,search_repositories,list_branches,create_branch,get_commit,list_commits,list_tags,get_latest_release,list_releases,fork_repository,get_repository_tree,actions_get,actions_list,actions_run_trigger,get_job_logs,get_gist,create_gist,list_gists,search_users"
+      }
+    }
+  }
+}

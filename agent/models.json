@@ -1,0 +1,87 @@
+{
+  "providers": {
+    "azure-foundry-chat": {
+      "baseUrl": "https://llm-4xa-sandbox.openai.azure.com/openai/v1",
+      "api": "openai-completions",
+      "apiKey": "!security find-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w",
+      "compat": {
+        "supportsDeveloperRole": false
+      },
+      "models": [
+        {
+          "id": "DeepSeek-V4-Pro",
+          "name": "DeepSeek V4 Pro on Azure Foundry",
+          "contextWindow": 1000000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "DeepSeek-V4-Flash",
+          "name": "DeepSeek V4 Flash on Azure Foundry",
+          "contextWindow": 1000000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "DeepSeek-V4-Flash-0731",
+          "name": "DeepSeek V4 Flash 0731 on Azure Foundry",
+          "contextWindow": 1000000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": "none",
+            "minimal": null,
+            "low": null,
+            "medium": null,
+            "high": "high",
+            "xhigh": null,
+            "max": "max"
+          }
+        },
+        {
+          "id": "Kimi-K2.6",
+          "name": "Kimi K2.6 on Azure Foundry",
+          "contextWindow": 200000
+        },
+        {
+          "id": "Kimi-K2.7-Code",
+          "name": "Kimi K2.7 Code on Azure Foundry",
+          "contextWindow": 200000
+        },
+        {
+          "id": "grok-4.6",
+          "name": "Grok 4.6 on Azure Foundry",
+          "contextWindow": 1000000,
+          "reasoning": true,
+          "thinkingLevelMap": {
+            "off": null,
+            "minimal": null,
+            "low": "low",
+            "medium": "medium",
+            "high": "high",
+            "xhigh": "xhigh",
+            "max": "xhigh"
+          },
+          "compat": {
+            "supportsReasoningEffort": true
+          }
+        }
+      ]
+    }
+  }
+}

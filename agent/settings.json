@@ -1,0 +1,85 @@
+{
+  "lastChangelogVersion": "0.87.1",
+  "theme": "dark",
+  "defaultProvider": "azure-foundry-chat",
+  "defaultModel": "DeepSeek-V4-Flash-0731",
+  "defaultThinkingLevel": "max",
+  "modelThinkingLevels": {
+    "azure-foundry-chat/DeepSeek-V4-Pro": "max",
+    "azure-foundry-chat/DeepSeek-V4-Flash": "max",
+    "azure-foundry-chat/DeepSeek-V4-Flash-0731": "max",
+    "azure-foundry-chat/grok-4.6": "max"
+  },
+  "enabledModels": [
+    "azure-openai-responses/gpt-5-nano",
+    "azure-openai-responses/gpt-5.6-terra",
+    "azure-foundry-chat/DeepSeek-V4-Flash-0731",
+    "azure-foundry-chat/Kimi-K2.6",
+    "azure-foundry-chat/Kimi-K2.7-Code",
+    "azure-foundry-chat/grok-4.6"
+  ],
+  "packages": [
+    "npm:pi-web-access",
+    "npm:pi-mcp-adapter",
+    {
+      "source": "npm:@dietrichgebert/ponytail",
+      "skills": [
+        "+skills/ponytail/SKILL.md",
+        "+skills/ponytail-audit/SKILL.md",
+        "+skills/ponytail-debt/SKILL.md",
+        "+skills/ponytail-gain/SKILL.md",
+        "+skills/ponytail-help/SKILL.md",
+        "+skills/ponytail-review/SKILL.md"
+      ],
+      "extensions": [
+        "+pi-extension/index.js"
+      ]
+    },
+    "npm:@gotgenes/pi-permission-system",
+    {
+      "source": "npm:confluence-cli",
+      "extensions": [
+        "-.pi/extensions/confluence-cli.ts"
+      ],
+      "skills": [
+        "-plugins/confluence/skills/confluence/SKILL.md"
+      ]
+    },
+    "npm:@narumitw/pi-plan-mode",
+    "npm:@tintinweb/pi-subagents"
+  ],
+  "skills": [
+    "-skills/langchain-docs/SKILL.md",
+    "-skills/databricks-agent-bricks/SKILL.md",
+    "-skills/databricks-ai-functions/SKILL.md",
+    "-skills/databricks-aibi-dashboards/SKILL.md",
+    "-skills/databricks-app-design/SKILL.md",
+    "-skills/databricks-apps/SKILL.md",
+    "-skills/databricks-apps-python/SKILL.md",
+    "-skills/databricks-core/SKILL.md",
+    "-skills/databricks-dabs/SKILL.md",
+    "-skills/databricks-dbsql/SKILL.md",
+    "-skills/databricks-docs/SKILL.md",
+    "-skills/databricks-execution-compute/SKILL.md",
+    "-skills/databricks-iceberg/SKILL.md",
+    "-skills/databricks-jobs/SKILL.md",
+    "-skills/databricks-lakebase/SKILL.md",
+    "-skills/databricks-lakeflow-connect/SKILL.md",
+    "-skills/databricks-metric-views/SKILL.md",
+    "-skills/databricks-ml-training/SKILL.md",
+    "-skills/databricks-mlflow-evaluation/SKILL.md",
+    "-skills/databricks-model-serving/SKILL.md",
+    "-skills/databricks-pipelines/SKILL.md",
+    "-skills/databricks-python-sdk/SKILL.md",
+    "-skills/databricks-serverless-migration/SKILL.md",
+    "-skills/databricks-spark-structured-streaming/SKILL.md",
+    "-skills/databricks-synthetic-data-gen/SKILL.md",
+    "-skills/databricks-unity-catalog/SKILL.md",
+    "-skills/databricks-unstructured-pdf-generation/SKILL.md",
+    "-skills/databricks-vector-search/SKILL.md",
+    "-skills/databricks-zerobus-ingest/SKILL.md"
+  ],
+  "extensions": [
+    "-extensions/jev-browser-use.ts"
+  ]
+}
