@@ -3,6 +3,7 @@
  *
  *   /pi-git --config  TUI: scegli skill/agenti/prompt/estensioni/file da tracciare
  *   /pi-git --update  committa e pushta su main solo ciò che è in pi-git.json
+ *   /pi-git --readme  riallinea il README ai cambiamenti locali (delega a pi)
  *
  * La whitelist vive in ~/.pi/pi-git.json. README.md, pi-git.json e questo tool
  * sono sempre tracciati, whitelist o no: la repo deve saper ripararsi da sola.
@@ -150,6 +151,37 @@ export async function runUpdate(): Promise<string> {
 	return warnings.length ? `${summary}\n${warnings.join("\n")}` : summary;
 }
 
+export function buildReadmeMessage(status: string, tracked: string[]): string {
+	return (
+		`[pi-git] Rigenera ~/.pi/README.md per riflettere lo stato CORRENTE della configurazione.\n\n` +
+		`La repo è ~/.pi (whitelist in pi-git.json). Regole rigide:\n` +
+		`- Documenta SOLO i file tracciati: la lista qui sotto è la verità. Se un path non è tra questi (e non è README.md/pi-git.json/pyproject.toml/uv.lock/agent/extensions/pi-git), NON menzionarlo mai.\n` +
+		`- Le righe \`??\` nello status sono file locali NON tracciati: ignorale a meno che il path non compaia in pi-git.json.\n` +
+		`- Tutto in inglese, conciso, con tabelle.\n` +
+		`- Mantieni INALTERATI: la sezione "Part 1 — Installing pi (from the official repo)", la riga bold "The easiest way to install…" sotto l'intro, il disclaimer credenziali Azure (⚠️) nella sezione modelli, e la sezione "5. Secrets".\n` +
+		`- Non aggiungere né rimuovere sezioni: aggiorna solo il contenuto di quelle esistenti per riflettere i cambiamenti.\n` +
+		`\nCambiamenti dalla view git (git status --porcelain):\n` +
+		(status || "(nessuno)") +
+		`\n\nFile tracciati (git ls-files):\n` +
+		tracked.join("\n") +
+		`\n\nCome procedere:\n` +
+		`1. Per ogni file modificato/aggiunto/rimosso nello status, trova la sua voce nel README: leggi i file cambiati (SKILL.md, agent md, header delle estensioni, models.json, settings.json) e aggiorna descrizioni, comandi e tabelle in base a cosa fanno ORA.\n` +
+		`2. File tracciati nuovi non ancora documentati → aggiungi le voci; file rimossi → elimina le voci.\n` +
+		`3. Aggiorna i conteggi tipo "(7)" negli header delle sezioni.\n` +
+		`4. Scrivi ~/.pi/README.md e rispondi con un riepilogo di 3-6 bullet di cosa hai cambiato. NON committare: lo fa /pi-git --update.`
+	);
+}
+
+async function runReadme(ctx: any, pi: ExtensionAPI): Promise<void> {
+	const ls = await git(["ls-files"]);
+	const status = await git(["status", "--porcelain"]);
+	ctx.ui.notify("Diff calcolato — delego la rigenerazione del README…", "info");
+	pi.sendUserMessage(
+		buildReadmeMessage(status.out, ls.ok ? ls.out.split("\n").filter(Boolean) : []),
+		{ triggerTurn: true },
+	);
+}
+
 async function runConfig(ctx: any): Promise<void> {
 	let m = loadManifest() ?? { ...DEFAULT_MANIFEST };
 	const SAVE = "💾  Salva ed esci";
@@ -183,9 +215,9 @@ async function runConfig(ctx: any): Promise<void> {
 
 export default function piGit(pi: ExtensionAPI): void {
 	pi.registerCommand("pi-git", {
-		description: "Sincronizza la config pi su GitHub: --config = whitelist (TUI), --update = commit+push",
+		description: "Sincronizza la config pi su GitHub: --config = whitelist TUI, --update = commit+push, --readme = riallinea il README",
 		getArgumentCompletions: (prefix: string) => {
-			const words = ["--config", "--update"].filter((w) => w.startsWith(prefix.toLowerCase()));
+			const words = ["--config", "--update", "--readme"].filter((w) => w.startsWith(prefix.toLowerCase()));
 			return words.length ? words.map((w) => ({ value: w, label: w })) : null;
 		},
 		handler: async (args: string, ctx) => {
@@ -198,7 +230,11 @@ export default function piGit(pi: ExtensionAPI): void {
 				ctx.ui.notify((await runUpdate()).slice(0, 400), "info");
 				return;
 			}
-			ctx.ui.notify("/pi-git --config | --update", "info");
+			if (flag === "--readme" || flag === "-r") {
+				await runReadme(ctx, pi);
+				return;
+			}
+			ctx.ui.notify("/pi-git --config | --update | --readme", "info");
 		},
 	});
 }

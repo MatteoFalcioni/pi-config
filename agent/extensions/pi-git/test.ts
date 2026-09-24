@@ -34,4 +34,11 @@ const out3 = await runUpdate();
 if (!out3.startsWith("Già sincronizzato")) throw new Error(`3: ${out3}`);
 if (JSON.stringify(tracked()) !== JSON.stringify(t2)) throw new Error("ls-files cambiato dopo no-op");
 
+// 4. messaggio --readme: contiene status e lista tracciata
+import { buildReadmeMessage } from "./index.ts";
+const msg = buildReadmeMessage("M README.md\n?? agent/skills/x/", ["README.md", "agent/skills/x/SKILL.md"]);
+if (!msg.includes("M README.md") || !msg.includes("agent/skills/x/SKILL.md") || !msg.includes("Part 1")) {
+	throw new Error("readme message incompleto");
+}
+
 console.log("OK: add / remove / always / no-op verificati");
