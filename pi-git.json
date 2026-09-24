@@ -1,7 +1,6 @@
 {
   "skills": [
     "pdf-compress",
-    "tts",
     "web-debug"
   ],
   "agents": [
@@ -18,7 +17,6 @@
     "clip.ts",
     "inspect-image.ts",
     "pi-permission-system",
-    "tts-commands.ts",
     "browser"
   ],
   "files": [
