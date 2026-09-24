@@ -165,10 +165,10 @@ security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w
 | whisper-cpp | dictate extension | `brew install whisper-cpp` | `whisper-cli --help` |
 | Chromium (playwright) | browser extension / web-debug | `cd ~/.pi/agent/extensions/browser && npm install && npx playwright install chromium` | `ls ~/Library/Caches/ms-playwright` |
 
-### 4. Python venvs (Apple Silicon)
+### 4. Python dependencies (single uv-managed environment)
 
 ```sh
-# dictate (whisper)
-uv pip install --python ~/.local/venvs/dictate/bin/python sounddevice onnxruntime numpy
-# ggml-small.en + silero VAD models download on first use
+uv sync --group dictate     # creates ~/.pi/.venv from pyproject.toml + uv.lock
 ```
+
+The dictate extension's script (`~/.local/bin/dictate`) runs from this environment; its ggml-small.en + silero VAD models download on first use.

@@ -1,0 +1,18 @@
+# Single-source Python dependency setup for the whole pi config.
+# Install with: uv sync --group <name>   (creates ~/.pi/.venv)
+# Lock file: uv.lock (commit it — reproducible installs).
+[project]
+name = "pi-config"
+version = "0.1.0"
+description = "Python dependencies for pi-config extensions and skills"
+requires-python = ">=3.13"
+dependencies = []
+
+[dependency-groups]
+dictate = [
+    "sounddevice",
+    "onnxruntime",
+    "numpy",
+]
+# tts group (mlx-audio, pinned mlx==0.31.2 — M5/macOS 26.1 JIT issue):
+# add when the tts skill is back in the whitelist

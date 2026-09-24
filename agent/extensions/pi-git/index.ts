@@ -40,7 +40,7 @@ export const DEFAULT_MANIFEST: Manifest = {
 };
 
 // Sempre tracciati, whitelist o no.
-const ALWAYS = ["README.md", "pi-git.json", "agent/extensions/pi-git/"];
+const ALWAYS = ["README.md", "pi-git.json", "pyproject.toml", "uv.lock", "agent/extensions/pi-git/"];
 
 interface Category {
 	key: keyof Manifest;

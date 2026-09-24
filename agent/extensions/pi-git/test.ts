@@ -14,7 +14,7 @@ const out1 = await runUpdate();
 if (!out1.startsWith("Pushato")) throw new Error(`1: ${out1}`);
 const t1 = tracked();
 if (!t1.includes("agent/skills/pdf-compress/file.txt")) throw new Error(`pdf-compress non tracciato: ${t1}`);
-if (!t1.includes("README.md") || !t1.includes("pi-git.json")) throw new Error(`always mancanti: ${t1}`);
+if (!t1.includes("README.md") || !t1.includes("pi-git.json") || !t1.includes("pyproject.toml") || !t1.includes("uv.lock")) throw new Error(`always mancanti: ${t1}`);
 if (t1.includes("agent/skills/tts/file.txt")) throw new Error("tts non doveva essere tracciato");
 
 // 2. whitelist cambiata a [tts]: tts aggiunto, pdf-compress rimosso dal tracking,
@@ -25,7 +25,7 @@ if (!out2.startsWith("Pushato")) throw new Error(`2: ${out2}`);
 const t2 = tracked();
 if (!t2.includes("agent/skills/tts/file.txt")) throw new Error(`tts non aggiunto: ${t2}`);
 if (t2.includes("agent/skills/pdf-compress/file.txt")) throw new Error("pdf-compress doveva essere rimosso");
-for (const must of ["README.md", "pi-git.json", "agent/extensions/pi-git/index.ts"]) {
+for (const must of ["README.md", "pi-git.json", "pyproject.toml", "uv.lock", "agent/extensions/pi-git/index.ts"]) {
 	if (!t2.includes(must)) throw new Error(`always perso dopo update 2: ${must} → ${t2}`);
 }
 
