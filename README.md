@@ -80,7 +80,7 @@ Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-install
 
 Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-Flash-0731`, thinking level `max`. Enabled models also include `azure-openai-responses/gpt-5-nano` and `gpt-5.6-terra`. API keys never appear in files: `auth.json` and `models.json` reference the Keychain via `!security find-generic-password …`, and the GitHub MCP token via `!gh auth token`.
 
-> ⚠️ **This provider requires real Azure Foundry credentials**: the API key stored in the macOS Keychain as `opencode-azure-foundry-key` (see Part 3). Do not invent or fabricate them — if the credentials are missing, stop and ask the owner for the key.
+> ⚠️ **This provider requires real Azure Foundry credentials**: the API key is read from the macOS Keychain (`pi-az-foundry-key`) or, outside macOS, from the `AZURE_OPENAI_API_KEY` environment variable (see Part 3). Do not invent or fabricate them — if the credentials are missing, stop and ask the owner for the key.
 
 ### Skills (2)
 
@@ -173,12 +173,20 @@ uv sync --group dictate     # creates ~/.pi/.venv from pyproject.toml + uv.lock
 
 The dictate extension's script (`~/.local/bin/dictate`) runs from this environment; its ggml-small.en + silero VAD models download on first use.
 
-### 5. Secrets (macOS Keychain — never in the repo)
+### 5. Secrets — never in the repo
 
-Tell the user to store the Azure Foundry API key **themselves**, in their own terminal — do not ask for the key and do not have it pasted into the session (you should never see it):
+Tell the user to store the Azure Foundry API key **themselves**, in their own terminal — do not ask for the key and do not have it pasted into the session (you should never see it). Wait for them to confirm it's done, then continue.
+
+On **macOS** (Keychain):
 
 ```sh
-security add-generic-password -a matteofalcioni -s opencode-azure-foundry-key -w 'THE_KEY'
+security add-generic-password -a "$USER" -s pi-az-foundry-key -w 'THE_KEY'
 ```
 
-Wait for the user to confirm it's done, then continue. `AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
+On **other systems** (no Keychain): the key is read from the `AZURE_OPENAI_API_KEY` environment variable — have the user add it to their shell profile:
+
+```sh
+export AZURE_OPENAI_API_KEY='THE_KEY'
+```
+
+`AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
