@@ -8,32 +8,25 @@ Whitelisted, versioned configuration for the [pi coding agent](https://pi.dev) (
 
 ## Part 1 — Installing pi (from the official repo)
 
-From the [pi coding agent README](https://github.com/earendil-works/pi/blob/main/packages/coding-agent/README.md):
+Pi runs on macOS, Linux and Windows (native or WSL). Follow the [official quickstart](https://pi.dev/docs/latest/quickstart) for more detail.
 
-> Pi is a minimal, extensible AI agent for the terminal. Adapt Pi to your workflow, not the other way around.
+**macOS/Linux (including WSL):** use the official installer in your terminal. It can offer to install Node.js and npm if they are missing. On WSL, run it *inside your Linux distribution*, not in PowerShell:
 
-Install the command-line interface with npm:
-
-```bash
-npm install -g --ignore-scripts @earendil-works/pi-coding-agent
-```
-
-This requires **Node.js 22.19 or newer**. Pi does not require dependency lifecycle scripts for a normal npm installation.
-
-On macOS or Linux, you can instead use the installer:
-
-```bash
+```sh
 curl -fsSL https://pi.dev/install.sh | sh
 ```
 
-Start Pi in the directory where you want it to work:
+**Native Windows:** install [Node.js 22.19 or newer](https://nodejs.org/en/download) (with npm) and [Git for Windows](https://git-scm.com/download/win) (Pi uses Git Bash for shell commands). Then run in PowerShell:
 
-```bash
-cd /path/to/project
-pi
+```powershell
+npm.cmd install -g --ignore-scripts @earendil-works/pi-coding-agent
 ```
 
-For a built-in AI provider, run `/login` inside Pi to connect a subscription or API key. Then give Pi a task.
+Prefer npm on macOS or Linux? With Node.js 22.19+ and npm installed, run `npm install -g --ignore-scripts @earendil-works/pi-coding-agent` instead. See the [Windows setup guide](https://pi.dev/docs/latest/windows) for native Windows shell options.
+
+**Restoring this repo?** Clone it *before* using the installer or starting Pi, since either can create `$HOME/.pi` (see Part 3).
+
+On any platform, check the installation with `pi --version`, then open a terminal in the folder you want Pi to work in and run `pi`. If PowerShell blocks `.ps1` scripts, use `pi.cmd` instead. For a built-in AI provider, run `/login` inside Pi to connect a subscription or API key.
 
 Full setup and usage: the [pi documentation](https://pi.dev/docs/latest) (also reachable in the installed package under `docs/`). Updating later: `pi update` (pi itself), `pi update --extensions` (packages), `pi update --all` (both).
 
@@ -57,7 +50,7 @@ The logic is self-tested: `npm root -g` for `NODE_PATH`, `PI_GIT_REPO=/tmp/scrat
 ├── agent/                       # pi's config directory (live)
 │   ├── settings.json            # default provider/model, npm packages, theme, disabled skills
 │   ├── models.json              # custom provider (azure-foundry-chat) and its models
-│   ├── auth.json                # API key via Keychain indirection (no plaintext secrets)
+│   ├── auth.json                # API key via Keychain or environment (no plaintext secrets)
 │   ├── mcp.json                 # MCP servers (GitHub Copilot, auth via `!gh auth token`)
 │   ├── web-search.json          # web_search provider settings (auto-summary workflow)
 │   ├── APPEND_SYSTEM.md         # global behavior rules appended to every session
@@ -69,11 +62,11 @@ The logic is self-tested: `npm root -g` for `NODE_PATH`, `PI_GIT_REPO=/tmp/scrat
 └── README.md
 ```
 
-Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-installed packages), caches, the browser extension's Chromium profile, binaries — plus anything you mark as ignored via `/pi-git`, which lands under the `# user excludes (managed via /pi-git)` section of `.gitignore`.
+Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-installed packages), `agent/install/` (Pi installer files), caches, the browser extension's Chromium profile, binaries — plus anything you mark as ignored via `/pi-git`, which lands under the `# user excludes (managed via /pi-git)` section of `.gitignore`.
 
 ### Models & provider
 
-`models.json` defines one custom provider, **`azure-foundry-chat`** — an OpenAI-compatible endpoint on Azure Foundry (base URL `https://llm-4xa-sandbox.openai.azure.com/openai/v1`, static API key read from the macOS Keychain). Models available:
+`models.json` defines one custom provider, **`azure-foundry-chat`** — an OpenAI-compatible endpoint on Azure Foundry (base URL `https://llm-4xa-sandbox.openai.azure.com/openai/v1`, API key from the macOS Keychain or an environment variable). Models available:
 
 | Model | Context | Notes |
 |---|---|---|
@@ -85,7 +78,7 @@ Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-install
 | Grok-4.6 | 1M | reasoning; supports reasoning effort (low→xhigh) |
 | GPT-6 Sol | 1M | reasoning; thinking: off/high/max — default thinking: max |
 
-Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-Flash-0731`, thinking level `max`. Enabled models also include `azure-openai-responses/gpt-5-nano`, `gpt-5.6-terra`, and `azure-foundry-chat/gpt-6-sol` (thinking pinned to `max`). API keys never appear in files: `auth.json` and `models.json` reference the Keychain via `!security find-generic-password …`, and the GitHub MCP token via `!gh auth token`.
+Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-Flash-0731`, thinking level `max`. Enabled models also include `azure-openai-responses/gpt-5-nano`, `gpt-5.6-terra`, and `azure-foundry-chat/gpt-6-sol` (thinking pinned to `max`). No plaintext API keys are committed: `auth.json` and `models.json` read the macOS Keychain via `!security find-generic-password …` or a per-process environment variable, and the GitHub MCP token via `!gh auth token`.
 
 > ⚠️ **This provider requires real Azure Foundry credentials**: the API key is read from the macOS Keychain (`pi-az-foundry-key`) or, outside macOS, from the `AZURE_OPENAI_API_KEY` environment variable (see Part 3). Do not invent or fabricate them — if the credentials are missing, stop and ask the owner for the key.
 
@@ -140,61 +133,104 @@ Be concise · explain technical concepts in plain English (no jargon) · delegat
 
 ---
 
-## Part 3 — Restoring this setup on a new Mac
+## Part 3 — Restoring this setup on macOS, Linux or Windows
 
-> **Installing agent:** work through this section step by step, in order. Before installing anything, tell the user what you're about to install and why, and wait for their go-ahead. The tools in step 2 are **required**; everything in step 3 is optional — offer it, and install only what the user agrees to.
+> **Installing agent:** work through this section in order. Before installing anything, tell the user what you're about to install and why, and wait for their go-ahead. Only install the extra tools for features they want.
 
-### 1. Install pi (Part 1), then clone
+### 1. Clone, then install pi (Part 1)
+
+Install [Git](https://git-scm.com/downloads) if needed (on native Windows, Git for Windows also provides Pi's Bash). **Before running Pi or its installer**, use a macOS/Linux/WSL shell or Windows PowerShell to clone:
 
 ```sh
-git clone https://github.com/MatteoFalcioni/pi-config.git ~/.pi
+git clone https://github.com/MatteoFalcioni/pi-config.git "$HOME/.pi"
 ```
 
-If `~/.pi` exists (pi was run before): inside `~/.pi` run
-`git init -b main && git remote add origin <URL> && git pull origin main --allow-unrelated-histories`.
+If `$HOME/.pi` already exists, don't clone over it: back it up and migrate its sessions, settings, credentials and any existing Pi installation deliberately. Don't pull unrelated histories into live configuration.
 
-On first launch pi auto-installs the npm packages declared in `settings.json` (needs internet). Their skills/extensions load from there.
+Now install Pi using Part 1. On first launch Pi installs the npm packages declared in `settings.json` (needs internet and npm). Their skills/extensions load from there.
 
-### 2. Required tools (install in this order)
+### 2. Extra tools (only for features you use)
 
-| # | Tool | Install | Why it's required |
-|---|---|---|---|
-| 1 | uv | `brew install uv` | manages the Python environment (step 4) |
-| 2 | gh CLI | `brew install gh` + `gh auth login` (interactive browser login) | GitHub MCP auth (`!gh auth token`) |
-| 3 | fd | `brew install fd` | fast file search used by the config |
+| Tool | Needed for | Install |
+|---|---|---|
+| [GitHub CLI (`gh`)](https://github.com/cli/cli#installation) | GitHub MCP auth (`!gh auth token`) | Follow your OS instructions, then run `gh auth login` |
+| [uv](https://docs.astral.sh/uv/getting-started/installation/) | macOS dictation (step 4) | Follow its install guide; on macOS, `brew install uv` also works |
 
-Verify each with: `uv --version`, `gh auth status`, `fd --version`.
-
-### 3. Optional tools (offer, install on approval)
+### 3. Optional extensions (offer, install on approval)
 
 | Tool | Install | Needed for |
 |---|---|---|
-| ghostscript | `brew install ghostscript` | pdf-compress skill |
-| whisper-cpp | `brew install whisper-cpp` | dictate extension |
-| Chromium (playwright) | `cd ~/.pi/agent/extensions/browser && npm install && npx playwright install chromium` | browser extension / web-debug skill |
+| [Ghostscript](https://www.ghostscript.com/releases/gsdnld.html) | `brew install ghostscript` | pdf-compress skill (macOS-only script) |
+| whisper-cpp (macOS only) | `brew install whisper-cpp` | dictate extension |
+| Chromium (Playwright) | In `$HOME/.pi/agent/extensions/browser`, run `npm install`, then `npx playwright install chromium` (PowerShell: `npm.cmd` / `npx.cmd`) | browser extension / web-debug skill |
 
-### 4. Python dependencies
+### 4. macOS-only dictation dependencies
 
-```sh
-uv sync --group dictate     # creates ~/.pi/.venv from pyproject.toml + uv.lock
-```
-
-The dictate extension's script (`~/.local/bin/dictate`) runs from this environment; its ggml-small.en + silero VAD models download on first use.
-
-### 5. Secrets — never in the repo
-
-Tell the user to store the Azure Foundry API key **themselves**, in their own terminal — do not ask for the key and do not have it pasted into the session (you should never see it). Wait for them to confirm it's done, then continue.
-
-On **macOS** (Keychain):
+Only if using `/dictate`, from this repo's root:
 
 ```sh
-security add-generic-password -a "$USER" -s pi-az-foundry-key -w 'THE_KEY'
+cd "$HOME/.pi"
+uv sync --group dictate     # creates .venv from pyproject.toml + uv.lock
 ```
 
-On **other systems** (no Keychain): the key is read from the `AZURE_OPENAI_API_KEY` environment variable — have the user add it to their shell profile:
+The macOS dictation backend (`~/.local/bin/dictate`) is **not included** in this repo; `uv sync` alone does not enable it. `/clip` needs macOS (`pbcopy`), and the PDF-compress script uses macOS `stat`. None of these extras is required to run Pi on Linux or Windows.
+
+### 5. Secrets — never in the repo or shell profiles
+
+The default Azure models need the owner's real API key. **Installing agent:** have the user enter it on their own machine, never in this chat. Wait for confirmation before continuing. This config reads `pi-az-foundry-key` from macOS Keychain; on Linux/Windows, it reads `AZURE_OPENAI_API_KEY`. The functions below fetch the key from encrypted storage when Pi starts instead of saving plaintext in a profile or exporting it for the whole shell session.
+
+**macOS — Keychain.** Run this in your own terminal; the final `-w` prompts for the key without putting it in shell history:
 
 ```sh
-export AZURE_OPENAI_API_KEY='THE_KEY'
+security add-generic-password -a "$USER" -s pi-az-foundry-key -U -w
 ```
 
-`AZURE_OPENAI_BASE_URL` already lives inside `models.json`/`auth.json` — nothing to add to your shell profile.
+`auth.json` and `models.json` already read this item directly. Optionally, to make credentials available to Pi integrations, add the **existing** `pi()` function from this machine's `~/.zshrc` to your own `~/.zshrc` (keep only lines for Keychain items you actually have):
+
+```zsh
+pi() {
+  PI_KIMAI_KEY=$(security find-generic-password -a "$USER" -s pi-kimai-key -w) \
+  AZURE_FOUNDRY_API_KEY=$(security find-generic-password -a "$USER" -s pi-az-foundry-key -w) \
+  OPENROUTER_API_KEY=$(security find-generic-password -a "$USER" -s openrouter -w) \
+  command pi "$@"
+}
+```
+
+The Azure models work without this optional function; it passes additional keys to Pi and its integrations only while Pi runs. Open a new terminal after editing `~/.zshrc`.
+
+**Linux/WSL — [pass](https://www.passwordstore.org/) + GnuPG.** Install and initialize `pass` with your GPG key using its linked instructions, then store the key (the command prompts; do not type the key as an argument):
+
+```sh
+pass insert pi-az-foundry-key
+```
+
+Add to `~/.bashrc` (or `~/.zshrc` if using zsh), then open a new terminal:
+
+```sh
+pi() {
+  local key
+  key=$(pass show pi-az-foundry-key) || return 1
+  AZURE_OPENAI_API_KEY="$key" command pi "$@"
+}
+```
+
+**Native Windows — Windows DPAPI.** In PowerShell, store an encrypted credential **outside this repo**; enter the Azure key as the password (the username `pi` is just a label):
+
+```powershell
+Get-Credential -UserName pi -Message 'Azure Foundry API key' | Export-Clixml "$env:LOCALAPPDATA\pi-az-foundry-key.xml"
+```
+
+Add this function to your PowerShell profile (`$PROFILE`), then open a new PowerShell window:
+
+```powershell
+function pi {
+  $credential = Import-Clixml "$env:LOCALAPPDATA\pi-az-foundry-key.xml" -ErrorAction Stop
+  $env:AZURE_OPENAI_API_KEY = $credential.GetNetworkCredential().Password
+  try { & pi.cmd @args }
+  finally { Remove-Item Env:AZURE_OPENAI_API_KEY -ErrorAction SilentlyContinue }
+}
+```
+
+The [encrypted credential](https://learn.microsoft.com/en-us/powershell/module/microsoft.powershell.utility/export-clixml) can be decrypted only by the same Windows user on the same machine; repeat setup on a new machine. If your execution policy blocks PowerShell profiles, define the function in each session instead of bypassing an organization policy.
+
+These methods protect keys *at rest* and keep plaintext out of shell history and profiles; while Pi runs, its extensions and child processes can still access credentials you give it ([Pi security guide](https://pi.dev/docs/latest/security)). `AZURE_OPENAI_BASE_URL` is already set in `models.json`/`auth.json`.

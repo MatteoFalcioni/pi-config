@@ -6,6 +6,7 @@ agent/models-store.json
 agent/trust.json
 agent/cloudflare-gateway-ca.pem
 agent/bin/
+agent/install/
 
 # installed packages (regenerable via settings.json "packages")
 agent/npm/

@@ -89,11 +89,11 @@
           "thinkingLevelMap": {
             "off": "none",
             "minimal": null,
-            "low": null,
-            "medium": null,
+            "low": "low",
+            "medium": "medium",
             "high": "high",
-            "xhigh": null,
-            "max": "max"
+            "xhigh": "xhigh",
+            "max": "xhigh"
           },
           "compat": {
             "supportsReasoningEffort": true
