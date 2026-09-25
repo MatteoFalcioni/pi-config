@@ -41,9 +41,14 @@ Full setup and usage: the [pi documentation](https://pi.dev/docs/latest) (also r
 
 ## Part 2 — This repository
 
-Everything under `~/.pi` is **live configuration**: it stays on disk and git never touches it unless whitelisted. Only what is listed in **`pi-git.json`** is pushed to GitHub, plus `README.md`, `pi-git.json` and the `/pi-git` extension itself, which are always tracked — the repo must be able to restore its own tooling.
+Everything under `~/.pi` is **live configuration**: it stays on disk and git only touches what is not in **`.gitignore`** — that file is the whitelist. `README.md`, `pyproject.toml`, `uv.lock`, `.gitignore` and the `/pi-git` extension itself are always part of the repo (they aren't ignored), so the repo can restore its own tooling.
 
-Manage the whitelist with `/pi-git --config` (TUI: toggle entries with Enter, Esc goes back, "Save and exit" writes the manifest) and sync with `/pi-git --update` (stages exactly the whitelist, untracks anything no longer whitelisted, commits and pushes; no-op if nothing changed). The update logic is self-tested: `PI_GIT_REPO=/tmp/scratch node agent/extensions/pi-git/test.ts` against a seeded scratch repo.
+Manage the whitelist with `/pi-git --config` (TUI: browse categories, Enter toggles a file between tracked ✓ / ignored ✗, Esc goes back — every choice writes `.gitignore`) and sync with:
+
+- `/pi-git --update` — lists **new** local files in a TUI (toggle `track`/`ignore`, Esc to proceed), stages everything with `git add -A`, then delegates README regeneration to pi based on the staged changes.
+- `/pi-git --push` — re-stages, asks for confirmation **only if `README.md` changed** (include it or skip it), then commits and pushes.
+
+The logic is self-tested: `npm root -g` for `NODE_PATH`, `PI_GIT_REPO=/tmp/scratch`, then `node agent/extensions/pi-git/test.ts` against a seeded scratch repo.
 
 ### Structure (tracked files only)
 
@@ -56,14 +61,15 @@ Manage the whitelist with `/pi-git --config` (TUI: toggle entries with Enter, Es
 │   ├── mcp.json                 # MCP servers (GitHub Copilot, auth via `!gh auth token`)
 │   ├── web-search.json          # web_search provider settings (auto-summary workflow)
 │   ├── APPEND_SYSTEM.md         # global behavior rules appended to every session
+│   ├── crashes.json             # pi crash log (auto-written, prune as it grows)
 │   ├── agents/                  # custom subagents (4)
 │   ├── skills/                  # local skills (2)
-│   └── extensions/              # extensions (7)
-├── pi-git.json                  # THE whitelist (managed via /pi-git --config)
+│   └── extensions/              # extensions (8)
+├── .gitignore                   # THE whitelist (managed via /pi-git --config)
 └── README.md
 ```
 
-Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-installed packages), caches, the browser extension's Chromium profile, binaries.
+Always excluded from this repo: `sessions/` (chat history), `npm/` (auto-installed packages), caches, the browser extension's Chromium profile, binaries — plus anything you mark as ignored via `/pi-git`, which lands under the `# user excludes (managed via /pi-git)` section of `.gitignore`.
 
 ### Models & provider
 
@@ -99,7 +105,7 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `deep-researcher` | GenAI research and fact-checking analyst with confidence-tagged reports |
 | `worker` | General-purpose worker that reads, writes, and edits code |
 
-### Extensions (7) and their commands/tools
+### Extensions (8) and their commands/tools
 
 | Extension | What it does |
 |---|---|
@@ -109,7 +115,8 @@ Defaults in `settings.json`: provider `azure-foundry-chat`, model `DeepSeek-V4-F
 | `inspect-image.ts` | `inspect_image` — routes images to a vision model for non-vision models |
 | `browser/` | Playwright-driven headless Chromium (`browser_*` tools) for live-page debugging |
 | `pi-permission-system/` | Permission gating (config: yoloMode on, permission review log) |
-| `pi-git/` | `/pi-git` — whitelist TUI, sync and README regeneration (`--config`, `--update`, `--readme`) |
+| `pi-git/` | `/pi-git` — `.gitignore`-based sync: `--config` TUI (track/ignore), `--update` (new-file review + README regeneration), `--push` (README confirm + commit/push) |
+| `pi-logo.ts` | `/builtin-header` — restores pi's built-in header (three-colour ASCII mark) |
 
 ### Installed packages (auto-installed by pi from `settings.json` "packages")
 

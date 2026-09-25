@@ -1,13 +1,17 @@
 /**
- * /pi-git — versiona la configurazione pi su GitHub con una whitelist.
+ * /pi-git — version the pi configuration to GitHub. Source of truth: .gitignore.
  *
- *   /pi-git --config  TUI: scegli skill/agenti/prompt/estensioni/file da tracciare
- *   /pi-git --update  committa e pushta su main solo ciò che è in pi-git.json
- *   /pi-git --readme  riallinea il README ai cambiamenti locali (delega a pi)
+ *   /pi-git --config  TUI: browse skills/agents/prompts/extensions/files and toggle
+ *                     tracking (✓ tracked / ✗ ignored) → only touches .gitignore
+ *                     (+ git add / rm --cached to keep the index in sync)
+ *   /pi-git --update  lists NEW files (track/ignore via TUI), then delegates README
+ *                     regeneration to the model based on the staged changes
+ *   /pi-git --push    re-stages, asks for confirmation only if README.md changed,
+ *                     then commits and pushes
  *
- * La whitelist vive in ~/.pi/pi-git.json. README.md, pi-git.json e questo tool
- * sono sempre tracciati, whitelist o no: la repo deve saper ripararsi da sola.
- * La logica di update è esportata e coperta da test.ts (scratch repo via PI_GIT_REPO).
+ * Rule: everything NOT in .gitignore gets tracked. "Untrack" = line in .gitignore
+ * + git rm --cached (gitignore alone does not untrack files already in git).
+ * Core logic is exported and covered by test.ts (scratch repo via PI_GIT_REPO).
  */
 
 import { execFile } from "node:child_process";
@@ -20,52 +24,17 @@ const execFileP = promisify(execFile);
 
 const REPO = process.env.PI_GIT_REPO || `${os.homedir()}/.pi`;
 const AGENT = `${REPO}/agent`;
-const MANIFEST = `${REPO}/pi-git.json`;
+const GITIGNORE = `${REPO}/.gitignore`;
 const BRANCH = "main";
 const REMOTE = "origin";
+const USER_MARKER = "# user excludes (managed via /pi-git)";
+const MARK_TRACK = "✓ ";
+const MARK_IGNORE = "✗ ";
 
-export type Manifest = {
-	skills: string[];
-	agents: string[];
-	prompts: string[];
-	extensions: string[];
-	files: string[];
-};
-
-export const DEFAULT_MANIFEST: Manifest = {
-	skills: [],
-	agents: [],
-	prompts: [],
-	extensions: [],
-	files: [],
-};
-
-// Sempre tracciati, whitelist o no.
-const ALWAYS = ["README.md", "pi-git.json", "pyproject.toml", "uv.lock", "agent/extensions/pi-git/"];
-
-interface Category {
-	key: keyof Manifest;
-	label: string;
-	dir: string; // sotto AGENT
-	kind: "dirs" | "files" | "both";
-	resolve: (name: string) => string; // path repo-relativo
+export interface Ui {
+	select(title: string, options: string[]): Promise<string | undefined>;
+	notify(msg: string, kind?: "info" | "warning" | "error" | "success"): void;
 }
-
-// File di stato macchina: mai proposti in lista (sarebbero comunque ignorati da git).
-const STATE_FILES = new Set([
-	"trust.json",
-	"mcp-cache.json",
-	"models-store.json",
-	"cloudflare-gateway-ca.pem",
-]);
-
-const CATEGORIES: Category[] = [
-	{ key: "skills", label: "Skill", dir: "skills", kind: "dirs", resolve: (n) => `agent/skills/${n}` },
-	{ key: "agents", label: "Agenti", dir: "agents", kind: "files", resolve: (n) => `agent/agents/${n}` },
-	{ key: "prompts", label: "Prompt", dir: "prompts", kind: "files", resolve: (n) => `agent/prompts/${n}` },
-	{ key: "extensions", label: "Estensioni", dir: "extensions", kind: "both", resolve: (n) => `agent/extensions/${n}` },
-	{ key: "files", label: "File config", dir: ".", kind: "files", resolve: (n) => `agent/${n}` },
-];
 
 export async function git(
 	args: string[],
@@ -83,17 +52,61 @@ export async function git(
 	}
 }
 
-export function loadManifest(): Manifest | null {
+// --- .gitignore ------------------------------------------------
+
+export function loadGitignore(): string[] {
 	try {
-		return { ...DEFAULT_MANIFEST, ...JSON.parse(fs.readFileSync(MANIFEST, "utf8")) };
+		return fs.readFileSync(GITIGNORE, "utf8").split("\n");
 	} catch {
-		return null;
+		return [];
 	}
 }
 
-export function saveManifest(m: Manifest): void {
-	fs.writeFileSync(MANIFEST, JSON.stringify(m, null, 2) + "\n");
+export function saveGitignore(lines: string[]): void {
+	fs.writeFileSync(GITIGNORE, lines.join("\n").replace(/\n+$/, "") + "\n");
 }
+
+function patternFor(path: string, kind: Category["kind"]): string {
+	if (kind === "dirs") return `${path}/`;
+	if (kind === "both" && isDir(path)) return `${path}/`;
+	return path;
+}
+
+function isDir(repoPath: string): boolean {
+	try {
+		return fs.statSync(`${REPO}/${repoPath}`).isDirectory();
+	} catch {
+		return false;
+	}
+}
+
+export function addUserPatterns(patterns: string[]): string[] {
+	const cur = loadGitignore();
+	const fresh = patterns.filter((p) => p && !cur.includes(p));
+	if (!fresh.length) return cur;
+	const header = cur.includes(USER_MARKER) ? [] : ["", USER_MARKER];
+	const next = [...cur, ...header, ...fresh];
+	saveGitignore(next);
+	return next;
+}
+
+// --- browsable categories (no more manifest) -------------------
+
+interface Category {
+	key: string;
+	label: string;
+	dir: string; // under AGENT
+	kind: "dirs" | "files" | "both";
+	resolve: (name: string) => string; // repo-relative path
+}
+
+const CATEGORIES: Category[] = [
+	{ key: "skills", label: "Skills", dir: "skills", kind: "dirs", resolve: (n) => `agent/skills/${n}` },
+	{ key: "agents", label: "Agents", dir: "agents", kind: "files", resolve: (n) => `agent/agents/${n}` },
+	{ key: "prompts", label: "Prompts", dir: "prompts", kind: "files", resolve: (n) => `agent/prompts/${n}` },
+	{ key: "extensions", label: "Extensions", dir: "extensions", kind: "both", resolve: (n) => `agent/extensions/${n}` },
+	{ key: "files", label: "Config files", dir: ".", kind: "files", resolve: (n) => `agent/${n}` },
+];
 
 function listEntries(cat: Category): string[] {
 	let entries: fs.Dirent[];
@@ -105,136 +118,201 @@ function listEntries(cat: Category): string[] {
 	return entries
 		.filter((e) => !e.name.startsWith("."))
 		.filter((e) => (cat.kind === "dirs" ? e.isDirectory() : cat.kind === "files" ? e.isFile() : true))
-		.filter((e) => !(cat.key === "files" && STATE_FILES.has(e.name)))
 		.filter((e) => cat.key !== "files" || /\.(json|md)$/.test(e.name))
 		.map((e) => e.name)
 		.sort();
 }
 
-export async function runUpdate(): Promise<string> {
-	const m = loadManifest();
-	if (!m) return "Manca pi-git.json — prima /pi-git --config";
+// --- TUI: picking the new files in --update --------------------
 
-	// Normalizza gli slash finali: il confronto di rimozione aggiunge "/" al path.
-	const wanted: string[] = [...ALWAYS, ...CATEGORIES.flatMap((c) => m[c.key].map(c.resolve))].map((p) =>
-		p.replace(/\/+$/, ""),
-	);
-	const warnings: string[] = [];
+export async function chooseIgnores(
+	pick: (title: string, options: string[]) => Promise<string | undefined>,
+	newFiles: string[],
+): Promise<string[]> {
+	const DONE = "🚀  Proceed (✗ stay local, out of this push)";
+	const ignored = new Set<string>();
+	for (;;) {
+		const items = [...newFiles.map((f) => `${ignored.has(f) ? MARK_IGNORE : MARK_TRACK}${f}`), DONE];
+		const sel = await pick(
+			`pi-git — ${newFiles.length} new files: Enter toggles ✓ track / ✗ ignore • Esc: proceed`,
+			items,
+		);
+		if (!sel || sel === DONE) return [...ignored];
+		const name = sel.slice(2); // strip "✓ " / "✗ "
+		if (ignored.has(name)) ignored.delete(name);
+		else ignored.add(name);
+	}
+}
 
-	for (const p of wanted) {
-		const r = await git(["add", "--", p]);
-		if (!r.ok) warnings.push(`ignorato: ${p} (${r.err.split("\n")[0]})`);
+// --- --update --------------------------------------------------
+
+export async function runUpdate(ui: Ui, delegate: (message: string) => void): Promise<string> {
+	await git(["fetch", REMOTE], { timeout: 60_000 }); // best effort: no remote → ignore
+
+	const behind = await git(["rev-list", "--count", `HEAD..${REMOTE}/${BRANCH}`]);
+	if (behind.ok && parseInt(behind.out || "0", 10) > 0) {
+		return `Remote is ${behind.out} commit(s) ahead: run git pull first.`;
+	}
+
+	const st = await git(["status", "--porcelain"]);
+	const newFiles = st.ok
+		? st.out.split("\n").filter((l) => l.startsWith("??")).map((l) => l.slice(3))
+		: [];
+
+	const ignored = newFiles.length ? await chooseIgnores((t, o) => ui.select(t, o), newFiles) : [];
+	if (ignored.length) addUserPatterns(ignored);
+
+	const add = await git(["add", "-A"]);
+	if (!add.ok) return `git add failed: ${add.err}`;
+
+	const staged = await git(["diff", "--cached", "--name-only"]);
+	const stagedList = staged.ok ? staged.out.split("\n").filter(Boolean) : [];
+	if (!stagedList.length) {
+		return newFiles.length ? "Everything ignored: nothing to push." : "Already in sync: no changes.";
 	}
 
 	const ls = await git(["ls-files"]);
-	const tracked = ls.ok ? ls.out.split("\n").filter(Boolean) : [];
-	const toRemove = tracked.filter((t) => !wanted.some((w) => t === w || t.startsWith(`${w}/`)));
-	for (const t of toRemove) {
-		await git(["rm", "-r", "--cached", "--quiet", "--", t]);
+	delegate(buildReadmeMessage(stagedList, ls.ok ? ls.out.split("\n").filter(Boolean) : []));
+	return `README regenerating (${stagedList.length} files staged). Then run /pi-git --push.`;
+}
+
+// --- --push ----------------------------------------------------
+
+const README_YES = "💾  Yes: commit and push with the updated README";
+const README_NO = "⏭️   No: skip the README (stays local)";
+
+export async function runPush(ui: Ui): Promise<string> {
+	const add = await git(["add", "-A"]);
+	if (!add.ok) return `git add failed: ${add.err}`;
+
+	const staged = await git(["diff", "--cached", "--name-only"]);
+	let stagedList = staged.ok ? staged.out.split("\n").filter(Boolean) : [];
+	if (!stagedList.length) return "Nothing to push: no staged changes.";
+
+	if (stagedList.includes("README.md")) {
+		const opt = await ui.select("README.md changed: include it in this push?", [README_YES, README_NO]);
+		if (opt === undefined || opt === README_NO) {
+			await git(["restore", "--staged", "README.md"]);
+			stagedList = stagedList.filter((p) => p !== "README.md");
+			if (!stagedList.length) return "README skipped: nothing else to push.";
+		}
 	}
 
-	const diff = await git(["diff", "--cached", "--name-only"]);
-	const changed = diff.ok ? diff.out.split("\n").filter(Boolean) : [];
-	if (!changed.length) {
-		return "Già sincronizzato: nessuna modifica in whitelist." + (warnings.length ? `\n${warnings.join("\n")}` : "");
-	}
-
-	const commit = await git(["commit", "-m", `sync pi config (${changed.length} files)`]);
-	if (!commit.ok) return `Commit fallito: ${commit.err}`;
+	const commit = await git(["commit", "-m", `sync pi config (${stagedList.length} files)`]);
+	if (!commit.ok) return `Commit failed: ${commit.err}`;
 
 	const push = await git(["push", REMOTE, BRANCH], { timeout: 300_000 });
-	if (!push.ok) return `Commit ok, ma push fallito: ${push.err}`;
+	if (!push.ok) return `Commit ok, but push failed: ${push.err}`;
 
-	const shown = changed.map((p) => p.replace(/^agent\//, "")).slice(0, 4).join(", ");
+	const shown = stagedList.map((p) => p.replace(/^agent\//, "")).slice(0, 4).join(", ");
 	const hash = commit.out.match(/\b[0-9a-f]{7,}\b/)?.[0] ?? "?";
-	const summary = `Pushato ${hash} (${BRANCH}): ${shown}${changed.length > 4 ? ` +${changed.length - 4}` : ""}`;
-	return warnings.length ? `${summary}\n${warnings.join("\n")}` : summary;
+	return `Pushed ${hash} (${BRANCH}): ${shown}${stagedList.length > 4 ? ` +${stagedList.length - 4}` : ""}`;
 }
 
-export function buildReadmeMessage(status: string, tracked: string[]): string {
+// --- delegate README regeneration to the model -----------------
+
+export function buildReadmeMessage(staged: string[], tracked: string[]): string {
 	return (
-		`[pi-git] Rigenera ~/.pi/README.md per riflettere lo stato CORRENTE della configurazione.\n\n` +
-		`La repo è ~/.pi (whitelist in pi-git.json). Regole rigide:\n` +
-		`- Documenta SOLO i file tracciati: la lista qui sotto è la verità. Se un path non è tra questi (e non è README.md/pi-git.json/pyproject.toml/uv.lock/agent/extensions/pi-git), NON menzionarlo mai.\n` +
-		`- Le righe \`??\` nello status sono file locali NON tracciati: ignorale a meno che il path non compaia in pi-git.json.\n` +
-		`- Tutto in inglese, conciso, con tabelle.\n` +
-		`- Mantieni INALTERATI: la sezione "Part 1 — Installing pi (from the official repo)", la riga bold "The easiest way to install…" sotto l'intro, il disclaimer credenziali Azure (⚠️) nella sezione modelli, e la sezione "5. Secrets".\n` +
-		`- Non aggiungere né rimuovere sezioni: aggiorna solo il contenuto di quelle esistenti per riflettere i cambiamenti.\n` +
-		`\nCambiamenti dalla view git (git status --porcelain):\n` +
-		(status || "(nessuno)") +
-		`\n\nFile tracciati (git ls-files):\n` +
+		`[pi-git] Regenerate ~/.pi/README.md to reflect the CURRENT state of the configuration.\n\n` +
+		`The repo is ~/.pi and the source of truth is .gitignore: everything NOT ignored is tracked (no more pi-git.json). Strict rules:\n` +
+		`- The "Tracked files" list below is the truth: document ONLY those files (and mention .gitignore as the whitelist mechanism). If a path is not in the list (and is not README.md/pyproject.toml/uv.lock/agent/extensions/pi-git), NEVER mention it.\n` +
+		`- \`??\` lines in local status are new files NOT yet decided: ignore them.\n` +
+		`- "Part 2 — This repository" and "Structure" must describe the /pi-git --config | --update | --push flow with .gitignore as the whitelist (no manifest).\n` +
+		`- Everything in English, concise, with tables.\n` +
+		`- KEEP UNCHANGED: "Part 1 — Installing pi (from the official repo)", the bold line "The easiest way to install…" under the intro, the Azure credentials disclaimer (⚠️) in the models section, and section "5. Secrets".\n` +
+		`- Do not add or remove sections: only update the content of existing ones to reflect the changes.\n` +
+		`\nStaged changes (git diff --cached --name-only — about to be pushed):\n` +
+		(staged.length ? staged.join("\n") : "(none)") +
+		`\n\nTracked files (git ls-files):\n` +
 		tracked.join("\n") +
-		`\n\nCome procedere:\n` +
-		`1. Per ogni file modificato/aggiunto/rimosso nello status, trova la sua voce nel README: leggi i file cambiati (SKILL.md, agent md, header delle estensioni, models.json, settings.json) e aggiorna descrizioni, comandi e tabelle in base a cosa fanno ORA.\n` +
-		`2. File tracciati nuovi non ancora documentati → aggiungi le voci; file rimossi → elimina le voci.\n` +
-		`3. Aggiorna i conteggi tipo "(7)" negli header delle sezioni.\n` +
-		`4. Scrivi ~/.pi/README.md e rispondi con un riepilogo di 3-6 bullet di cosa hai cambiato. NON committare: lo fa /pi-git --update.`
+		`\n\nHow to proceed:\n` +
+		`1. For every staged file, find its entry in the README: read the changed files (SKILL.md, agent md, extension headers, models.json, settings.json) and update descriptions, commands and tables to reflect what they do NOW.\n` +
+		`2. New tracked files not yet documented → add entries; removed files → delete entries.\n` +
+		`3. Update the counts like "(7)" in section headers.\n` +
+		`4. Write ~/.pi/README.md and reply with a 3-6 bullet summary of what you changed. Do NOT commit and do NOT push: the user runs /pi-git --push, which asks for confirmation if the README changed.`
 	);
 }
 
-async function runReadme(ctx: any, pi: ExtensionAPI): Promise<void> {
-	const ls = await git(["ls-files"]);
-	const status = await git(["status", "--porcelain"]);
-	ctx.ui.notify("Diff calcolato — delego la rigenerazione del README…", "info");
-	pi.sendUserMessage(
-		buildReadmeMessage(status.out, ls.ok ? ls.out.split("\n").filter(Boolean) : []),
-		{ triggerTurn: true },
-	);
-}
+// --- --config: TUI over .gitignore -----------------------------
 
 async function runConfig(ctx: any): Promise<void> {
-	let m = loadManifest() ?? { ...DEFAULT_MANIFEST };
-	const SAVE = "💾  Salva ed esci";
-	const MARK = "✓ ";
+	const ui: Ui = {
+		select: (t, o) => ctx.ui.select(t, o),
+		notify: (m, k = "info") => ctx.ui.notify(m, k as any),
+	};
+	const isIgnored = async (path: string) => (await git(["check-ignore", "-q", "--", path])).ok;
 
+	const SAVE = "💾  Save and exit";
 	for (;;) {
-		const pick = await ctx.ui.select("pi-git — cosa gestisci?  (esc: esci)", [
+		const pick = await ui.select("pi-git — what do you want to manage?  (esc: exit)", [
 			...CATEGORIES.map((c) => c.label),
 			SAVE,
 		]);
 		if (!pick || pick === SAVE) break;
 		const cat = CATEGORIES.find((c) => c.label === pick)!;
 		for (;;) {
-			const names = listEntries(cat);
-			if (!names.length) {
-				ctx.ui.notify(`${cat.label}: nessuna voce trovata`, "warning");
+			const entries = listEntries(cat);
+			if (!entries.length) {
+				ui.notify(`${cat.label}: nothing found`, "warning");
 				break;
 			}
-			const items = names.map((n) => `${m[cat.key].includes(n) ? MARK : "  "}${n}`);
-			const sel = await ctx.ui.select(`${cat.label} — invio: attiva/disattiva • esc: indietro`, items);
+			const items: string[] = [];
+			for (const e of entries) {
+				const path = cat.resolve(e);
+				items.push(`${(await isIgnored(path)) ? MARK_IGNORE : MARK_TRACK}${e}`);
+			}
+			const sel = await ui.select(
+				`${cat.label} — Enter: toggle ✓ tracked / ✗ ignored • Esc: back`,
+				items,
+			);
 			if (!sel) break;
-			const name = sel.slice(MARK.length);
-			m[cat.key] = m[cat.key].includes(name)
-				? m[cat.key].filter((x) => x !== name)
-				: [...m[cat.key], name];
+			const name = sel.slice(2);
+			const path = cat.resolve(name);
+			if (await isIgnored(path)) {
+				// track: remove our pattern from .gitignore and re-add
+				const pat = patternFor(path, cat.kind);
+				saveGitignore(loadGitignore().filter((l) => l !== pat && l !== USER_MARKER));
+				await git(["add", "--", path]);
+				ui.notify(`${name}: now tracked`, "success");
+			} else {
+				addUserPatterns([patternFor(path, cat.kind)]);
+				await git(["rm", "-r", "--cached", "--quiet", "--", path]);
+				ui.notify(`${name}: now ignored (in .gitignore)`, "success");
+			}
 		}
 	}
-	saveManifest(m);
-	ctx.ui.notify(`Whitelist salvata in ~/.pi/pi-git.json — poi /pi-git --update`, "success");
+	ui.notify(".gitignore updated — then /pi-git --update", "success");
 }
+
+// --- command ---------------------------------------------------
 
 export default function piGit(pi: ExtensionAPI): void {
 	pi.registerCommand("pi-git", {
-		description: "Sincronizza la config pi su GitHub: --config = whitelist TUI, --update = commit+push, --readme = riallinea il README",
+		description:
+			"Sync the pi config with GitHub (whitelist = .gitignore): --config = track/ignore TUI, --update = new files + README, --push = commit+push",
 		getArgumentCompletions: (prefix: string) => {
-			const words = ["--config", "--update", "--readme"].filter((w) => w.startsWith(prefix.toLowerCase()));
+			const words = ["--config", "--update", "--push"].filter((w) => w.startsWith(prefix.toLowerCase()));
 			return words.length ? words.map((w) => ({ value: w, label: w })) : null;
 		},
 		handler: async (args: string, ctx) => {
 			const flag = (args.trim().split(/\s+/)[0] ?? "").toLowerCase();
+			const ui: Ui = {
+				select: (t, o) => ctx.ui.select(t, o),
+				notify: (m, k = "info") => ctx.ui.notify(m, k as any),
+			};
 			if (flag === "--config" || flag === "-c") {
 				await runConfig(ctx);
 				return;
 			}
 			if (flag === "--update" || flag === "-u") {
-				ctx.ui.notify((await runUpdate()).slice(0, 400), "info");
+				ui.notify(await runUpdate(ui, (msg) => pi.sendUserMessage(msg, { triggerTurn: true } as any)), "info");
 				return;
 			}
-			if (flag === "--readme" || flag === "-r") {
-				await runReadme(ctx, pi);
+			if (flag === "--push" || flag === "-p") {
+				ui.notify(await runPush(ui), "info");
 				return;
 			}
-			ctx.ui.notify("/pi-git --config | --update | --readme", "info");
+			ui.notify("/pi-git --config | --update | --push", "info");
 		},
 	});
 }

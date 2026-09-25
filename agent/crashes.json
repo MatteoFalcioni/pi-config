@@ -1,0 +1,12 @@
+[
+  {
+    "timestamp": "2026-09-24T15:31:41.531Z",
+    "version": "0.87.1",
+    "kind": "uncaught_exception",
+    "message": "read EIO",
+    "stack": "Error: read EIO\n    at TTY.onStreamRead (node:internal/stream_base_commons:216:20)",
+    "sessionFile": "/Users/matteofalcioni/.pi/agent/sessions/--Users-matteofalcioni--/2026-09-24T15-04-33-248Z_01a0d3f2-64e0-7260-8475-c73e54fdf484.jsonl",
+    "cwd": "/Users/matteofalcioni",
+    "notified": true
+  }
+]

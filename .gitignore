@@ -1,0 +1,37 @@
+# machine state / caches
+agent/sessions/
+agent/web-search-cache/
+agent/mcp-cache.json
+agent/models-store.json
+agent/trust.json
+agent/cloudflare-gateway-ca.pem
+agent/bin/
+
+# installed packages (regenerable via settings.json "packages")
+agent/npm/
+
+# browser extension chrome profile (cookies/logins)
+agent/extensions/browser/.profile/
+
+# voice sample (biometric — keep out of GitHub)
+agent/skills/tts/assets/voices/tars.wav
+
+# dependencies and junk anywhere
+**/node_modules/
+**/__pycache__/
+*.pyc
+**/logs/
+.DS_Store
+.venv/
+
+
+# user excludes (managed via /pi-git)
+agent/prompts/
+agent/extensions/jev-browser-use.ts
+agent/extensions/kimai-tracker/
+
+agent/skills/kimai-time-tracking/
+
+agent/skills/tts/
+
+agent/extensions/tts-commands.ts
